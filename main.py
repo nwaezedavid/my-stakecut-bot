@@ -6,17 +6,39 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler, ConversationHandler
 
 # --- CONFIGURATION ---
-# 1. Your Specific Bot Token (Updated)
 TOKEN = "8206593551:AAHMi_AHYmJS-AcQVa0COn_0bXNCo-qQzTU"
 
-# 2. Your Affiliate Links
+# Your Links
 LEAD_MAGNET_LINK = "https://youtu.be/uPNy9X31-bs"
 AFFILIATE_LINK = "https://aff.stakecut.com/503/459513"
 
-# 3. Timing (Seconds). 
-# Currently set to 30 seconds for you to test it yourself.
-# BEFORE you sleep or share the link, change this to 7200 (2 hours).
-FOLLOWUP_DELAY = 7200 
+# TIMING CONFIGURATION
+# First message delay (The "Pitch" after video): 2 Hours = 7200 seconds
+INITIAL_DELAY = 7200  
+# Daily follow-up interval: 24 Hours = 86400 seconds
+DAILY_INTERVAL = 86400 
+
+# --- FOLLOW-UP SCRIPTS (30 DAYS) ---
+# The bot will cycle through these. You can edit the text inside the quotes.
+FOLLOWUP_SCRIPTS = [
+    # Day 1
+    "👋 {name}, quick check-in.\nDid you get a chance to finish the video? The strategy works best when you start immediately.",
+    # Day 2
+    "👀 {name}, I noticed you haven't started yet.\nIs there something confusing you about the Affiliate model? Reply here!",
+    # Day 3 (Social Proof)
+    "🔥 {name}, look at this!\nAnother student just made their first $50 using the exact method in the video. You could be next.",
+    # Day 4
+    "🤔 {name}, honestly asking...\nWhat is stopping you? $500/month is very realistic with this program. Click the link to start.",
+    # Day 5
+    "🚀 Price Increase Warning.\nThe mentorship price might go up soon. Secure your spot now: {link}",
+    # Day 6
+    "💡 Fact: You don't need a laptop.\nThis entire business can be run from the phone you are holding right now.",
+    # Day 7
+    "👋 {name}, it's been a week!\nImagine if you had started 7 days ago... you'd likely have your first sale by now. Start today!",
+]
+
+# Filler for the remaining days (8-30) to keep them engaged
+GENERIC_FOLLOWUP = "💰 Just a friendly reminder: The Dollar Income goal is still waiting for you. Tap here to start: {link}"
 
 # --- LOGGING ---
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -40,29 +62,71 @@ async def send_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     chat_id = update.effective_chat.id
+    name = query.from_user.first_name
     
+    # 1. Send Video
     await query.edit_message_text(
         text=f"Awesome! Here is the **Free Explanation Video**.\n\n"
              f"👇 **Click to Watch:**\n{LEAD_MAGNET_LINK}\n\n"
              f"It reveals the exact steps. Watch it now (15 mins)."
     )
     
-    # Schedule the Automatic Follow-up
-    context.job_queue.run_once(send_pitch_followup, FOLLOWUP_DELAY, chat_id=chat_id, data=query.from_user.first_name)
+    # 2. Schedule the IMMEDIATE Pitch (2 Hours later)
+    # We pass 'day': 0 to indicate this is the main pitch
+    context.job_queue.run_once(
+        send_scheduled_message, 
+        INITIAL_DELAY, 
+        chat_id=chat_id, 
+        data={'name': name, 'day': 0}
+    )
+    
+    # 3. Schedule the 30-DAY Follow-up Sequence
+    # We loop from Day 1 to Day 30
+    for day in range(1, 31):
+        delay = INITIAL_DELAY + (day * DAILY_INTERVAL)
+        context.job_queue.run_once(
+            send_scheduled_message, 
+            delay, 
+            chat_id=chat_id, 
+            data={'name': name, 'day': day}
+        )
+        
     return VIDEO_PHASE
 
-async def send_pitch_followup(context: ContextTypes.DEFAULT_TYPE):
+async def send_scheduled_message(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
-    pitch_text = (
-        f"👋 Hey {job.data}, I hope you watched the video!\n\n"
-        "🚀 **Quick Update:** The registration for the **A-Z Affiliate Marketing Program** is filling up fast.\n"
-        "Click below to get the **Discounted Access**:"
-    )
+    data = job.data
+    day_index = data['day']
+    user_name = data['name']
+    
+    # Decide which message to send
+    if day_index == 0:
+        # This is the Main Pitch (2 Hours)
+        message_text = (
+            f"👋 Hey {user_name}, I hope you watched the video!\n\n"
+            "It's mind-blowing how simple the business model is, right?\n\n"
+            "🚀 **Quick Update:** The registration for the **A-Z Affiliate Marketing Program** is filling up fast.\n"
+            "Click below to get the **Discounted Access**:"
+        )
+    else:
+        # This is a Daily Follow-up (Days 1-30)
+        # We check if we have a specific script for this day, otherwise use generic
+        script_index = day_index - 1
+        if script_index < len(FOLLOWUP_SCRIPTS):
+            raw_text = FOLLOWUP_SCRIPTS[script_index]
+        else:
+            raw_text = GENERIC_FOLLOWUP
+            
+        # Format the text with user's name and link
+        message_text = raw_text.format(name=user_name, link=AFFILIATE_LINK)
+
+    # Add Buttons
     keyboard = [
         [InlineKeyboardButton("💰 Get Started Now", url=AFFILIATE_LINK)],
         [InlineKeyboardButton("🤔 I Have a Question", callback_data='ask_question')]
     ]
-    await context.bot.send_message(chat_id=job.chat_id, text=pitch_text, reply_markup=InlineKeyboardMarkup(keyboard))
+    
+    await context.bot.send_message(chat_id=job.chat_id, text=message_text, reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def handle_questions(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -74,7 +138,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Okay! Type /start whenever you are ready.")
     return ConversationHandler.END
 
-# --- WEB SERVER (KEEPS BOT ALIVE) ---
+# --- WEB SERVER ---
 async def health_check(request):
     return web.Response(text="Bot is Alive")
 
@@ -88,7 +152,6 @@ async def run_web_server():
 
 # --- MAIN EXECUTION ---
 async def main():
-    # Build Bot
     application = ApplicationBuilder().token(TOKEN).build()
     
     conv_handler = ConversationHandler(
@@ -102,13 +165,11 @@ async def main():
     )
     application.add_handler(conv_handler)
 
-    # Start Web Server & Bot Together
     await run_web_server()
     await application.initialize()
     await application.start()
     await application.updater.start_polling()
     
-    # Keep running forever
     stop_signal = asyncio.Event()
     await stop_signal.wait()
 
@@ -118,7 +179,5 @@ if __name__ == '__main__':
         asyncio.set_event_loop(loop)
         loop.run_until_complete(main())
     except KeyboardInterrupt:
-
         pass
         
-
