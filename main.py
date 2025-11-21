@@ -114,9 +114,10 @@ async def reveal_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👇 **CLICK BELOW TO GET INSTANT ACCESS:**"
     )
     
+    # BUTTONS UPDATED HERE
     keyboard = [
-        [InlineKeyboardButton("🔓 REGISTER ON OWODAILY", url=AFFILIATE_LINK)],
-        [InlineKeyboardButton("💬 Chat with Me on WhatsApp", url=WHATSAPP_LINK)]
+        [InlineKeyboardButton("🚀 GET ACCESS NOW", url=AFFILIATE_LINK)],
+        [InlineKeyboardButton("🤔 I Have a Question", url=WHATSAPP_LINK)]
     ]
     
     await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard), parse_mode='Markdown')
@@ -150,9 +151,10 @@ async def send_scheduled_message(context: ContextTypes.DEFAULT_TYPE):
             raw_text = GENERIC_FOLLOWUP
         message_text = raw_text.format(name=user_name, link=AFFILIATE_LINK)
 
+    # BUTTONS UPDATED HERE AS WELL
     keyboard = [
-        [InlineKeyboardButton("🔓 REGISTER ON OWODAILY", url=AFFILIATE_LINK)],
-        [InlineKeyboardButton("💬 Chat with Me on WhatsApp", url=WHATSAPP_LINK)]
+        [InlineKeyboardButton("🚀 GET ACCESS NOW", url=AFFILIATE_LINK)],
+        [InlineKeyboardButton("🤔 I Have a Question", url=WHATSAPP_LINK)]
     ]
     
     await context.bot.send_message(chat_id=job.chat_id, text=message_text, reply_markup=InlineKeyboardMarkup(keyboard))
@@ -210,4 +212,3 @@ if __name__ == '__main__':
         loop.run_until_complete(main())
     except KeyboardInterrupt:
         pass
-        
