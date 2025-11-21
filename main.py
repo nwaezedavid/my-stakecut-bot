@@ -16,7 +16,7 @@ AFFILIATE_LINK = "https://aff.stakecut.com/503/459513"
 # 3. Timing (Seconds). 
 # Currently set to 30 seconds for you to test it yourself.
 # BEFORE you sleep or share the link, change this to 7200 (2 hours).
-FOLLOWUP_DELAY = 30 
+FOLLOWUP_DELAY = 7200 
 
 # --- LOGGING ---
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -121,3 +121,4 @@ if __name__ == '__main__':
 
         pass
         
+
