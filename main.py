@@ -109,8 +109,8 @@ async def reveal_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     text = (
         "🎉 **Congratulations! You are Qualified.**\n\n"
-        "You have everything you need to succeed. The platform we are using is called **OwoDaily**.\n\n"
-        "It allows you to earn by performing simple digital tasks or referring others.\n\n"
+        "You have everything you need to succeed. What you're about to learn is called **Affiliate Marketing**.\n\n"
+        "With this skill, you will know exactly how to sell anything online very fast and make tons on money everyday.\n\n"
         "👇 **CLICK BELOW TO GET INSTANT ACCESS:**"
     )
     
@@ -212,3 +212,4 @@ if __name__ == '__main__':
         loop.run_until_complete(main())
     except KeyboardInterrupt:
         pass
+
